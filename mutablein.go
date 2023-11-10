@@ -10,8 +10,8 @@ type MutableIn struct {
 	isRunning bool
 }
 
-func NewMutableIn() *mutableIn {
-	return &mutableIn{
+func NewMutableIn() *MutableIn {
+	return &MutableIn{
 		buffer: bytes.NewBuffer([]byte{}),
 	}
 }
