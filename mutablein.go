@@ -5,7 +5,7 @@ import (
 	"os/exec"
 )
 
-type mutableIn struct {
+type MutableIn struct {
 	buffer    *bytes.Buffer
 	isRunning bool
 }
@@ -16,19 +16,19 @@ func NewMutableIn() *mutableIn {
 	}
 }
 
-func (m *mutableIn) Init() {
+func (m *MutableIn) Init() {
 	m.isRunning = true
 	exec.Command("stty", "-f", "/dev/tty", "cbreak", "min", "1").Run()
 	exec.Command("stty", "-f", "/dev/tty", "-echo").Run()
 }
 
-func (m *mutableIn) Close() {
+func (m *MutableIn) Close() {
 	m.isRunning = false
 	exec.Command("stty", "-f", "/dev/tty", "-cbreak").Run()
 	exec.Command("stty", "-f", "/dev/tty", "echo").Run()
 }
 
-func (m *mutableIn) Read(p []byte) (n int, err error) {
+func (m *MutableIn) Read(p []byte) (n int, err error) {
 	if !m.isRunning {
 		panic(notInitError)
 	}
@@ -36,7 +36,7 @@ func (m *mutableIn) Read(p []byte) (n int, err error) {
 	return n, err
 }
 
-func (m *mutableIn) Write(p []byte) (n int, err error) {
+func (m *MutableIn) Write(p []byte) (n int, err error) {
 	if !m.isRunning {
 		panic(notInitError)
 	}
