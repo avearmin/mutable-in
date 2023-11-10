@@ -2,8 +2,7 @@ package mutablein
 
 import (
 	"bytes"
-
-	"golang.org/x/term"
+	"os/exec"
 )
 
 type mutableIn struct {
@@ -17,29 +16,30 @@ func NewMutableIn() *mutableIn {
 	}
 }
 
-func (m *mutableIn) Init() *term.State {
+func (m *mutableIn) Init() {
 	m.isRunning = true
-	oldState, err := term.MakeRaw(0)
-	if err != nil {
-		panic(err)
-	}
-	return oldState
+	exec.Command("stty", "-f", "/dev/tty", "cbreak", "min", "1").Run()
+	exec.Command("stty", "-f", "/dev/tty", "-echo").Run()
 }
 
-func (m *mutableIn) Close(oldState *term.State) {
+func (m *mutableIn) Close() {
 	m.isRunning = false
-	err := term.Restore(0, oldState)
-	if err != nil {
-		panic(err)
-	}
+	exec.Command("stty", "-f", "/dev/tty", "-cbreak").Run()
+	exec.Command("stty", "-f", "/dev/tty", "echo").Run()
 }
 
 func (m *mutableIn) Read(p []byte) (n int, err error) {
+	if !m.isRunning {
+		panic(notInitError)
+	}
 	n, err = m.buffer.Read(p)
 	return n, err
 }
 
 func (m *mutableIn) Write(p []byte) (n int, err error) {
+	if !m.isRunning {
+		panic(notInitError)
+	}
 	n, err = m.buffer.Write(p)
 	return n, err
 }
