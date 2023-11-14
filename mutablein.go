@@ -1,7 +1,10 @@
 package mutablein
 
 import (
+	"bufio"
 	"bytes"
+	"fmt"
+	"os"
 	"os/exec"
 )
 
@@ -42,4 +45,15 @@ func (m *MutableIn) Write(p []byte) (n int, err error) {
 	}
 	n, err = m.buffer.Write(p)
 	return n, err
+}
+
+func (m *MutableIn) simulateInput() {
+	stdin := bufio.NewReader(os.Stdin)
+	key, err := stdin.ReadByte()
+	for {
+		if err != nil {
+			panic(err)
+		}
+		fmt.Print(key)
+	}
 }
