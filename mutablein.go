@@ -45,10 +45,7 @@ func (m *MutableIn) Read(p []byte) (n int, err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// To avoid an EOF, we unlock and wait until the buffer has something
-	if m.buffer.Len() == 0 {
-		m.cond.Wait()
-	}
+	m.cond.Wait() // We want readers to wait until the enter key is pressed
 
 	n, err = m.buffer.Read(p)
 	return n, err
@@ -62,7 +59,6 @@ func (m *MutableIn) Write(p []byte) (n int, err error) {
 	defer m.mu.Unlock()
 
 	n, err = m.buffer.Write(p)
-	m.cond.Signal() // We signal to waiting readers the buffer has something
 	return n, err
 }
 
@@ -74,8 +70,6 @@ func (m *MutableIn) WriteByte(c byte) error {
 	defer m.mu.Unlock()
 
 	err := m.buffer.WriteByte(c)
-	fmt.Print(string(c))
-	m.cond.Signal() // We signal to waiting readers the buffer has something
 	return err
 }
 
@@ -93,5 +87,10 @@ func (m *MutableIn) simulateInput() {
 		if err != nil {
 			panic(err)
 		}
+		if key == '\n' {
+			m.cond.Signal() // We signal to waiting readers the buffer has something
+			continue
+		}
+		fmt.Print(string(key))
 	}
 }
