@@ -14,6 +14,7 @@ type MutableIn struct {
 	isRunning bool
 	mu        *sync.Mutex
 	cond      *sync.Cond
+	cursor    int
 }
 
 func NewMutableIn() *MutableIn {
@@ -59,18 +60,9 @@ func (m *MutableIn) Write(p []byte) (n int, err error) {
 	defer m.mu.Unlock()
 
 	n, err = m.buffer.Write(p)
+	m.cursor += len(p)
+	fmt.Print(string(p))
 	return n, err
-}
-
-func (m *MutableIn) WriteByte(c byte) error {
-	if !m.isRunning {
-		panic(notInitError)
-	}
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	err := m.buffer.WriteByte(c)
-	return err
 }
 
 func (m *MutableIn) simulateInput() {
@@ -79,18 +71,38 @@ func (m *MutableIn) simulateInput() {
 		if !m.isRunning {
 			return
 		}
-		key, err := stdin.ReadByte()
+		var key [3]byte
+		n, err := stdin.Read(key[:])
 		if err != nil {
 			panic(err)
 		}
-		err = m.WriteByte(key)
-		if err != nil {
-			panic(err)
-		}
-		if key == '\n' {
+		if key[0] == '\n' {
 			m.cond.Signal() // We signal to waiting readers the buffer has something
+			m.cursor = 0
+		}
+		if key[0] == 0x1b && key[1] == '[' {
+			m.handleArrowKeys(key) // Restrict cursor movement
 			continue
 		}
-		fmt.Print(string(key))
+		n, err = m.Write(key[:n])
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func (m *MutableIn) handleArrowKeys(key [3]byte) {
+	switch key[2] {
+	case 'D':
+		if m.cursor > 0 {
+			m.cursor--
+			fmt.Print("\033[D")
+		}
+	case 'C':
+		if m.cursor < m.buffer.Len() {
+			m.cursor++
+			fmt.Print("\033[C")
+		}
+
 	}
 }
