@@ -67,6 +67,7 @@ func (m *MutableIn) Write(p []byte) (n int, err error) {
 
 func (m *MutableIn) simulateInput() {
 	stdin := bufio.NewReader(os.Stdin)
+	keyEvents := keyEvents()
 	for {
 		if !m.isRunning {
 			return
@@ -76,33 +77,14 @@ func (m *MutableIn) simulateInput() {
 		if err != nil {
 			panic(err)
 		}
-		if key[0] == '\n' {
-			m.cond.Signal() // We signal to waiting readers the buffer has something
-			m.cursor = 0
-		}
-		if key[0] == 0x1b && key[1] == '[' {
-			m.handleArrowKeys(key) // Restrict cursor movement
+		event, hasEvent := keyEvents[key]
+		if hasEvent {
+			event.callback(m)
 			continue
 		}
 		n, err = m.Write(key[:n])
 		if err != nil {
 			panic(err)
 		}
-	}
-}
-
-func (m *MutableIn) handleArrowKeys(key [3]byte) {
-	switch key[2] {
-	case 'D':
-		if m.cursor > 0 {
-			m.cursor--
-			fmt.Print("\033[D")
-		}
-	case 'C':
-		if m.cursor < m.buffer.Len() {
-			m.cursor++
-			fmt.Print("\033[C")
-		}
-
 	}
 }
