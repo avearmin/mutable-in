@@ -41,7 +41,7 @@ func (m *MutableIn) Close() {
 
 func (m *MutableIn) Read(p []byte) (n int, err error) {
 	if !m.isRunning {
-		panic(notInitError)
+		return 0, notInitError
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -54,7 +54,7 @@ func (m *MutableIn) Read(p []byte) (n int, err error) {
 
 func (m *MutableIn) Write(p []byte) (n int, err error) {
 	if !m.isRunning {
-		panic(notInitError)
+		return 0, notInitError
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
