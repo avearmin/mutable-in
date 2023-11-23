@@ -2,27 +2,22 @@ package mutablein
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
-	"sync"
 )
 
 type MutableIn struct {
-	buffer    *bytes.Buffer
+	buffer    buffer
 	isRunning bool
-	mu        *sync.Mutex
-	cond      *sync.Cond
 	cursor    int
 }
 
 func NewMutableIn() *MutableIn {
+	buf := newbuffer()
 	muIn := MutableIn{
-		buffer: bytes.NewBuffer([]byte{}),
-		mu:     &sync.Mutex{},
+		buffer: buf,
 	}
-	muIn.cond = sync.NewCond(muIn.mu)
 	return &muIn
 }
 
@@ -43,12 +38,9 @@ func (m *MutableIn) Read(p []byte) (n int, err error) {
 	if !m.isRunning {
 		return 0, notInitError
 	}
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	m.cond.Wait() // We want readers to wait until the enter key is pressed
 
 	n, err = m.buffer.Read(p)
+
 	return n, err
 }
 
@@ -56,13 +48,12 @@ func (m *MutableIn) Write(p []byte) (n int, err error) {
 	if !m.isRunning {
 		return 0, notInitError
 	}
-	m.mu.Lock()
-	defer m.mu.Unlock()
 
 	n, err = m.buffer.Write(p)
-	m.cursor += len(p)
+
+	m.cursor += n
 	fmt.Print(string(p))
-	return n, err
+	return n, nil
 }
 
 func (m *MutableIn) simulateInput() {
@@ -82,9 +73,6 @@ func (m *MutableIn) simulateInput() {
 			event.callback(m)
 			continue
 		}
-		n, err = m.Write(key[:n])
-		if err != nil {
-			panic(err)
-		}
+		handleOtherKeys(m, key, n)
 	}
 }

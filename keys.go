@@ -28,8 +28,8 @@ func keyEvents() map[[3]byte]event {
 
 // handlers
 func handleEnter(m *MutableIn) {
-	m.cond.Signal() // We signal to waiting readers the buffer has something
-	m.cursor = -1   // Don't know whats up here. If I set the cursor to 0, then backspace does not work properly. But -1 works perfectly. What am I missing? Is 0 the wrong way to think about reseting cursor pos?
+	m.buffer.cond.Signal() // We signal to waiting readers the buffer has something
+	m.cursor = -1
 	m.Write([]byte{'\n'})
 }
 
@@ -37,18 +37,12 @@ func handleBackspace(m *MutableIn) {
 	if m.cursor < 1 {
 		return
 	}
-	m.mu.Lock()
-	defer m.mu.Unlock()
 
-	var newData []byte
 	if m.cursor >= m.buffer.Len() {
-		newData = processDataWhenBackspaceAtEnd(m)
+		m.buffer.truncate()
 	} else {
-		newData = proccessDataWhenBackspaceAtMiddle(m)
+		m.buffer.deleteIndexAt(m.cursor)
 	}
-
-	m.buffer.Reset()
-	m.buffer.Write(newData)
 
 	m.cursor--
 	redrawTermLine(m)
@@ -60,7 +54,6 @@ func handleRightArrow(m *MutableIn) {
 	}
 	m.cursor++
 	fmt.Print("\033[C")
-
 }
 
 func handleLeftArrow(m *MutableIn) {
@@ -75,20 +68,21 @@ func handleUpDownArrows(m *MutableIn) {
 	// These keys should do nothing
 }
 
-// helpers
-func processDataWhenBackspaceAtEnd(m *MutableIn) []byte {
-	data := m.buffer.Bytes()
-	newData := data[:len(data)-1]
-	return newData
+// Does  not appear in key events map. Consider this the default
+func handleOtherKeys(m *MutableIn, key [3]byte, n int) {
+	if m.cursor >= m.buffer.Len() {
+		m.Write(key[:n])
+	} else {
+		insertCharAtMiddle(m, key, n)
+	}
+
 }
 
-func proccessDataWhenBackspaceAtMiddle(m *MutableIn) []byte {
-	data := m.buffer.Bytes()
-	first := data[:m.cursor]
-	second := data[m.cursor+1:]
-
-	newData := append(first, second...)
-	return newData
+// helpers
+func insertCharAtMiddle(m *MutableIn, key [3]byte, n int) {
+	m.buffer.insert(key[:n], m.cursor)
+	m.cursor++
+	redrawTermLine(m)
 }
 
 func redrawTermLine(m *MutableIn) {
