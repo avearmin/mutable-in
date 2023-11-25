@@ -40,12 +40,16 @@ func handleBackspace(m *MutableIn) {
 
 	if m.cursor >= m.buffer.Len() {
 		m.buffer.truncate()
+		m.cursor--
+		fmt.Print("\b \b")
 	} else {
-		m.buffer.deleteIndexAt(m.cursor)
+		m.buffer.deleteIndexAt(m.cursor - 1)
+		m.cursor--
+		fmt.Print("\033[D")
+		redrawLineFromCursor(m)
+		fmt.Print("\033[K")
+		returnCursorToPos(m)
 	}
-
-	m.cursor--
-	redrawTermLine(m)
 }
 
 func handleRightArrow(m *MutableIn) {
@@ -73,24 +77,21 @@ func handleOtherKeys(m *MutableIn, key [3]byte, n int) {
 	if m.cursor >= m.buffer.Len() {
 		m.Write(key[:n])
 	} else {
-		insertCharAtMiddle(m, key, n)
+		m.buffer.insert(key[:n], m.cursor)
+		redrawLineFromCursor(m)
+		m.cursor++
+		returnCursorToPos(m)
 	}
 
 }
 
 // helpers
-func insertCharAtMiddle(m *MutableIn, key [3]byte, n int) {
-	m.buffer.insert(key[:n], m.cursor)
-	m.cursor++
-	redrawTermLine(m)
+func redrawLineFromCursor(m *MutableIn) {
+	lineAfterCursor := m.buffer.stringFromIndex(m.cursor)
+	fmt.Print(lineAfterCursor)
 }
 
-func redrawTermLine(m *MutableIn) {
-	fmt.Print("\033[1G")
-	fmt.Print("\033[2K")
-	fmt.Print(m.buffer.String())
-	fmt.Print("\r")
-	for i := 0; i < m.cursor; i++ {
-		fmt.Print("\033[C")
-	}
+func returnCursorToPos(m *MutableIn) {
+	pos := m.buffer.Len() - m.cursor
+	fmt.Printf("\033[%dD", pos)
 }

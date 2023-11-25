@@ -8,7 +8,7 @@ import (
 )
 
 type MutableIn struct {
-	buffer    buffer
+	buffer    *buffer
 	isRunning bool
 	cursor    int
 }
@@ -38,9 +38,7 @@ func (m *MutableIn) Read(p []byte) (n int, err error) {
 	if !m.isRunning {
 		return 0, notInitError
 	}
-
 	n, err = m.buffer.Read(p)
-
 	return n, err
 }
 
@@ -48,9 +46,7 @@ func (m *MutableIn) Write(p []byte) (n int, err error) {
 	if !m.isRunning {
 		return 0, notInitError
 	}
-
 	n, err = m.buffer.Write(p)
-
 	m.cursor += n
 	fmt.Print(string(p))
 	return n, nil

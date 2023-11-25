@@ -11,13 +11,13 @@ type buffer struct {
 	cond  *sync.Cond
 }
 
-func newbuffer() buffer {
+func newbuffer() *buffer {
 	buf := buffer{
 		bytes: []byte{},
 		mu:    &sync.Mutex{},
 	}
 	buf.cond = sync.NewCond(buf.mu)
-	return buf
+	return &buf
 }
 
 func (buf *buffer) Read(p []byte) (n int, err error) {
@@ -31,6 +31,7 @@ func (buf *buffer) Read(p []byte) (n int, err error) {
 	}
 	n = copy(p, buf.bytes)
 	buf.bytes = buf.bytes[n:]
+
 	return n, nil
 }
 
@@ -84,6 +85,10 @@ func (buf *buffer) Len() int {
 
 func (buf *buffer) String() string {
 	return string(buf.bytes)
+}
+
+func (buf *buffer) stringFromIndex(index int) string {
+	return string(buf.bytes[index:])
 }
 
 func (buf *buffer) Bytes() []byte {
