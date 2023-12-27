@@ -5,7 +5,6 @@ MutableIn is a Go library that provides an os.Stdin-like stream for custom inter
 # Table Of Contents
 - [Installation](#installation)
 - [Usage](#Usage)
-- [Testing and Considerations](#testing-and-considerations)
 
 # Installation
 To install MutableIn, use the following command:
