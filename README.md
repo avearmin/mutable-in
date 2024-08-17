@@ -2,17 +2,19 @@
 
 MutableIn is a Go library that provides an os.Stdin-like stream for custom interactive input, enabling external modification and real-time reflection in the CLI.
 
-# Table Of Contents
+![](./examples/calculator/valc.gif)
+
+## Table Of Contents
 - [Installation](#installation)
 - [Usage](#Usage)
 
-# Installation
+## Installation
 To install MutableIn, use the following command:
 ```bash
 go get github.com/avearmin/mutable-in
 ```
 
-# Usage
+## Usage
 To incorporate MutableIn into your Go project, follow these steps:
 
 1. Initialize MutableIn:
